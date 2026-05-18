@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP — Banquetes Dannys, S.A.</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+<style>
+  :root {
+    --navy: #1a2f5a;
+    --blue: #2e6da4;
+    --light-blue: #d6e8f7;
+    --green: #1a7a3c;
+    --light-green: #e8f5ee;
+    --orange: #e67e22;
+    --light-orange: #fef3e2;
+    --red: #c0392b;
+    --gray: #f4f6f9;
+    --border: #dde3ec;
+    --text: #1e2533;
+    --white: #ffffff;
+    --shadow: 0 2px 12px rgba(30,37,51,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--navy) 60%, var(--blue));
+    color: white; padding: 0;
+    box-shadow: var(--shadow);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 18px;
+    padding: 16px 32px 10px;
+  }
+  .logo {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: white; display: flex; align-items: center;
+    justify-content: center; font-size: 26px; flex-shrink: 0;
+  }
+  .header-info h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px; }
+  .header-info p  { font-size: 0.78rem; opacity: 0.80; margin-top: 2px; }
+
+  /* NAV */
+  nav {
+    display: flex; gap: 0;
+    background: rgba(0,0,0,0.18);
+    padding: 0 24px;
+    overflow-x: auto;
+  }
+  nav button {
+    background: none; border: none; color: rgba(255,255,255,0.75);
+    padding: 10px 18px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; border-bottom: 3px solid transparent;
+    white-space: nowrap; transition: all 0.2s; letter-spacing: 0.3px;
+  }
+  nav button:hover   { color: white; background: rgba(255,255,255,0.07); }
+  nav button.active  { color: white; border-bottom-color: #5dade2; }
+
+  /* LAYOUT */
+  main { padding: 28px 32px; max-width: 1300px; margin: 0 auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* PAGE TITLE */
+  .page-title {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 22px;
+  }
+  .page-title .icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--navy); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .page-title h2 { font-size: 1.25rem; color: var(--navy); font-weight: 700; }
+  .page-title p  { font-size: 0.8rem; color: #6b7a99; margin-top: 2px; }
+
+  /* CARDS */
+  .card {
+    background: white; border-radius: 12px;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+    margin-bottom: 22px; overflow: hidden;
+  }
+  .card-header {
+    background: var(--navy); color: white;
+    padding: 12px 20px; font-weight: 700; font-size: 0.9rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-body { padding: 20px; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 22px; }
+  .stat-card {
+    background: white; border-radius: 12px; padding: 18px 20px;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+    border-left: 4px solid var(--blue);
+  }
+  .stat-card.green { border-left-color: var(--green); }
+  .stat-card.orange { border-left-color: var(--orange); }
+  .stat-card.red { border-left-color: var(--red); }
+  .stat-label { font-size: 0.75rem; color: #6b7a99; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 1.45rem; font-weight: 800; color: var(--navy); margin-top: 6px; }
+  .stat-sub   { font-size: 0.75rem; color: #6b7a99; margin-top: 3px; }
+
+  /* FORMS */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 0.78rem; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.3px; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    border: 1.5px solid var(--border); border-radius: 7px;
+    padding: 9px 12px; font-size: 0.88rem; color: var(--text);
+    transition: border 0.2s; background: white;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none; border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(46,109,164,0.12);
+  }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+
+  /* BUTTONS */
+  .btn {
+    padding: 9px 20px; border: none; border-radius: 7px;
+    font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    transition: all 0.18s; letter-spacing: 0.3px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--navy); color: white; }
+  .btn-primary:hover { background: var(--blue); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,47,90,0.25); }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #155d2e; }
+  .btn-danger  { background: var(--red); color: white; font-size: 0.78rem; padding: 6px 12px; }
+  .btn-danger:hover { background: #a93226; }
+  .btn-outline {
+    background: none; border: 2px solid var(--blue);
+    color: var(--blue);
+  }
+  .btn-outline:hover { background: var(--light-blue); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+  /* TABLES */
+  .table-wrap { overflow-x: auto; border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  thead tr { background: var(--navy); color: white; }
+  thead th { padding: 11px 14px; text-align: left; font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:hover { background: var(--light-blue); }
+  tbody tr:nth-child(even) { background: var(--gray); }
+  tbody tr:nth-child(even):hover { background: var(--light-blue); }
+  td { padding: 10px 14px; vertical-align: middle; }
+  td.num { text-align: right; font-family: 'Courier New', monospace; font-weight: 600; }
+  td.code { font-family: monospace; font-weight: 700; color: var(--blue); }
+  .nivel-1 { background: var(--navy) !important; color: white; font-weight: 800; }
+  .nivel-2 { background: var(--blue) !important; color: white; font-weight: 700; }
+  .nivel-1 td, .nivel-2 td { color: white !important; }
+  .nivel-1:hover, .nivel-2:hover { opacity: 0.92; }
+
+  /* BADGES */
+  .badge {
+    display: inline-block; padding: 3px 9px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3px;
+  }
+  .badge-d { background: #dbeafe; color: #1e40af; }
+  .badge-a { background: #dcfce7; color: #166534; }
+  .badge-ajuste { background: #fef3c7; color: #92400e; }
+  .badge-normal { background: #e0e7ff; color: #3730a3; }
+
+  /* PARTIDAS DETAIL */
+  .detalle-section { background: var(--gray); border-radius: 8px; padding: 14px; margin-top: 14px; }
+  .detalle-section h4 { font-size: 0.82rem; color: var(--navy); font-weight: 700; margin-bottom: 10px; text-transform: uppercase; }
+  .detalle-row { display: grid; grid-template-columns: 160px 1fr 140px 140px 36px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .detalle-row input, .detalle-row select { font-size: 0.83rem; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 6px; }
+  .detalle-row input:focus, .detalle-row select:focus { outline: none; border-color: var(--blue); }
+  .detalle-header { display: grid; grid-template-columns: 160px 1fr 140px 140px 36px; gap: 8px; margin-bottom: 6px; }
+  .detalle-header span { font-size: 0.73rem; font-weight: 700; color: #6b7a99; text-transform: uppercase; }
+  .btn-add-row { background: var(--light-blue); border: 1.5px dashed var(--blue); color: var(--blue); border-radius: 6px; padding: 7px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; margin-top: 6px; }
+  .btn-add-row:hover { background: var(--blue); color: white; }
+
+  /* VERIFICATION */
+  .verify-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; border-radius: 8px; margin-top: 12px;
+    font-weight: 700; font-size: 0.88rem;
+  }
+  .verify-ok  { background: var(--light-green); color: var(--green); border: 1.5px solid #86efac; }
+  .verify-err { background: #fee2e2; color: var(--red); border: 1.5px solid #fca5a5; }
+
+  /* FINANCIALS */
+  .fin-section { margin-bottom: 8px; }
+  .fin-group-header td { background: var(--blue) !important; color: white !important; font-weight: 700; font-size: 0.82rem; text-transform: uppercase; }
+  .fin-total td { background: var(--light-orange) !important; font-weight: 800; color: var(--navy) !important; }
+  .fin-grandtotal td { background: var(--navy) !important; color: white !important; font-weight: 800; font-size: 1rem; }
+  .fin-check { padding: 12px 16px; border-radius: 8px; font-weight: 800; font-size: 1rem; text-align: center; margin-top: 12px; }
+  .fin-check.ok  { background: var(--light-green); color: var(--green); border: 2px solid #86efac; }
+  .fin-check.err { background: #fee2e2; color: var(--red); border: 2px solid #fca5a5; }
+
+  /* MAYOR */
+  .mayor-account {
+    border: 1.5px solid var(--border); border-radius: 10px;
+    overflow: hidden; margin-bottom: 18px;
+  }
+  .mayor-account-header {
+    background: var(--navy); color: white; padding: 10px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mayor-account-header span { font-size: 0.82rem; opacity: 0.8; }
+  .mayor-t-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .mayor-side { padding: 12px 16px; }
+  .mayor-side h5 { font-size: 0.75rem; font-weight: 700; color: var(--blue); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .mayor-side.right { border-left: 1.5px solid var(--border); }
+  .mayor-line { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 3px 0; }
+  .mayor-saldo { background: var(--light-blue); padding: 8px 16px; display: flex; justify-content: space-between; font-weight: 700; font-size: 0.88rem; border-top: 1.5px solid var(--border); }
+
+  /* ALERTS */
+  .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 0.85rem; font-weight: 600; }
+  .alert-info    { background: var(--light-blue); color: var(--navy); border-left: 4px solid var(--blue); }
+  .alert-success { background: var(--light-green); color: var(--green); border-left: 4px solid var(--green); }
+  .alert-warning { background: var(--light-orange); color: #7c4a00; border-left: 4px solid var(--orange); }
+
+  /* SQL VIEWER */
+  .sql-box { background: #1e2533; color: #a8d8a8; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 16px; border-radius: 8px; white-space: pre; overflow-x: auto; line-height: 1.6; }
+  .sql-keyword { color: #5dade2; font-weight: 700; }
+  .sql-comment  { color: #7f8c8d; }
+
+  /* RESPONSIVE */
+  @media (max-width: 800px) {
+    main { padding: 16px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .detalle-row { grid-template-columns: 1fr 1fr; }
+    header .header-top { padding: 12px 16px 8px; }
+    nav button { padding: 8px 12px; font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">🍽️</div>
+    <div class="header-info">
+      <h1>BANQUETES DANNYS, S.A.</h1>
+      <p>Sistema ERP Contable &nbsp;|&nbsp; NIT: CF-123456-7 &nbsp;|&nbsp; Régimen General IVA 12% &nbsp;|&nbsp; ISR Utilidades 25% &nbsp;|&nbsp; Ciudad de Guatemala, 2026</p>
+    </div>
+  </div>
+  <nav>
+    <button class="active" onclick="showPage('dashboard')">📊 Dashboard</button>
+    <button onclick="showPage('catalogo')">📋 Catálogo de Cuentas</button>
+    <button onclick="showPage('partidas')">✏️ Registrar Partida</button>
+    <button onclick="showPage('diario')">📖 Libro Diario</button>
+    <button onclick="showPage('mayor')">📚 Libro Mayor</button>
+    <button onclick="showPage('balance_saldos')">⚖️ Balance de Saldos</button>
+    <button onclick="showPage('ajustes')">🔧 Ajustes</button>
+    <button onclick="showPage('bal_ajustado')">📐 Bal. Ajustado</button>
+    <button onclick="showPage('resultados')">📈 Est. Resultados</button>
+    <button onclick="showPage('balance_general')">🏛️ Balance General</button>
+    <button onclick="showPage('sql_viewer')">💻 Ver SQL</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="page-title">
+    <div class="icon">📊</div>
+    <div><h2>Dashboard General</h2><p>Resumen del período — Enero 2026</p></div>
+  </div>
+  <div class="stats-row" id="stats-row"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <div class="card-header">📖 Últimas Partidas Registradas</div>
+      <div class="card-body" id="dash-partidas"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">⚖️ Verificación del Sistema</div>
+      <div class="card-body" id="dash-verify"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CATÁLOGO -->
+<div id="page-catalogo" class="page">
+  <div class="page-title">
+    <div class="icon">📋</div>
+    <div><h2>Catálogo de Cuentas</h2><p>Nomenclatura contable — puedes agregar, editar o eliminar cuentas</p></div>
+  </div>
+  <div class="card">
+    <div class="card-header">➕ Agregar Nueva Cuenta</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Código de Cuenta</label>
+          <input type="text" id="cat-codigo" placeholder="Ej: 1107" />
+        </div>
+        <div class="form-group">
+          <label>Nombre de la Cuenta</label>
+          <input type="text" id="cat-nombre" placeholder="Ej: Inventario de Suministros" />
+        </div>
+        <div class="form-group">
+          <label>Naturaleza</label>
+          <select id="cat-naturaleza">
+            <option value="D">Deudora (Activo / Gasto)</option>
+            <option value="A">Acreedora (Pasivo / Ingreso / Patrimonio)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="cat-tipo">
+            <option value="Mayor">Mayor (cuenta operativa)</option>
+            <option value="Grupo">Grupo (subtotal)</option>
+            <option value="Clase">Clase (total general)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nivel</label>
+          <select id="cat-nivel">
+            <option value="3">3 — Mayor (usar en partidas)</option>
+            <option value="2">2 — Grupo</option>
+            <option value="1">1 — Clase</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="agregarCuenta()">➕ Agregar Cuenta</button>
+      </div>
+      <div id="cat-msg"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">📋 Catálogo Completo</div>
+    <div class="card-body">
+      <div class="table-wrap" id="tabla-catalogo"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PARTIDAS -->
+<div id="page-partidas" class="page">
+  <div class="page-title">
+    <div class="icon">✏️</div>
+    <div><h2>Registrar Partida Contable</h2><p>Ingresa el asiento — el sistema valida que Debe = Haber</p></div>
+  </div>
+  <div class="card">
+    <div class="card-header">📝 Encabezado de la Partida</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Número de Partida</label>
+          <input type="number" id="p-numero" placeholder="Ej: 1" />
+        </div>
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="p-fecha" value="2026-01-01" />
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <label>Concepto General</label>
+          <input type="text" id="p-concepto" placeholder="Ej: Partida de apertura — Ecuación patrimonial" />
+        </div>
+        <div class="form-group">
+          <label>Tipo de Partida</label>
+          <select id="p-esajuste">
+            <option value="0">Partida Normal</option>
+            <option value="1">Ajuste Contable</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">📊 Detalle de Cargos y Abonos</div>
+    <div class="card-body">
+      <div class="detalle-header">
+        <span>Código Cuenta</span>
+        <span>Descripción</span>
+        <span>Debe (Q)</span>
+        <span>Haber (Q)</span>
+        <span></span>
+      </div>
+      <div id="detalle-rows"></div>
+      <button class="btn-add-row" onclick="agregarFilaDetalle()">+ Agregar línea</button>
+      <div id="verify-bar"></div>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="guardarPartida()">💾 Guardar Partida</button>
+        <button class="btn btn-outline" onclick="limpiarFormPartida()">🗑️ Limpiar</button>
+      </div>
+      <div id="p-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LIBRO DIARIO -->
+<div id="page-diario" class="page">
+  <div class="page-title">
+    <div class="icon">📖</div>
+    <div><h2>Libro Diario</h2><p>Registro cronológico de todos los asientos contables</p></div>
+  </div>
+  <div class="alert alert-info">💡 <strong>SQL usado:</strong> SELECT con JOIN entre Partidas, DetallePartidas y CatalogoCuentas, ordenado por fecha y número de partida.</div>
+  <div class="card">
+    <div class="card-header">📖 Asientos Registrados</div>
+    <div class="card-body">
+      <div class="table-wrap" id="tabla-diario"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LIBRO MAYOR -->
+<div id="page-mayor" class="page">
+  <div class="page-title">
+    <div class="icon">📚</div>
+    <div><h2>Libro Mayor</h2><p>Movimientos agrupados por cuenta — formato T</p></div>
+  </div>
+  <div class="alert alert-info">💡 <strong>SQL usado:</strong> GROUP BY CodigoCuenta con SUM(Debe) y SUM(Haber) — esto es lo que hace un ERP real.</div>
+  <div id="mayor-container"></div>
+</div>
+
+<!-- BALANCE DE SALDOS -->
+<div id="page-balance_saldos" class="page">
+  <div class="page-title">
+    <div class="icon">⚖️</div>
+    <div><h2>Balance de Saldos</h2><p>Resumen de saldos antes de ajustes</p></div>
+  </div>
+  <div class="card">
+    <div class="card-header">⚖️ Balance de Saldos — Período Enero 2026</div>
+    <div class="card-body">
+      <div class="table-wrap" id="tabla-balance-saldos"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AJUSTES -->
+<div id="page-ajustes" class="page">
+  <div class="page-title">
+    <div class="icon">🔧</div>
+    <div><h2>Ajustes Contables</h2><p>Partidas marcadas como ajuste de fin de período</p></div>
+  </div>
+  <div class="alert alert-warning">⚠️ Para registrar un ajuste, ve a <strong>Registrar Partida</strong> y selecciona "Ajuste Contable" en el tipo.</div>
+  <div class="card">
+    <div class="card-header">🔧 Ajustes Registrados</div>
+    <div class="card-body"><div class="table-wrap" id="tabla-ajustes"></div></div>
+  </div>
+</div>
+
+<!-- BAL AJUSTADO -->
+<div id="page-bal_ajustado" class="page">
+  <div class="page-title">
+    <div class="icon">📐</div>
+    <div><h2>Balance de Saldos Ajustados</h2><p>Saldos finales incluyendo ajustes de fin de período</p></div>
+  </div>
+  <div class="card">
+    <div class="card-header">📐 Balance de Saldos Ajustados</div>
+    <div class="card-body"><div class="table-wrap" id="tabla-bal-ajustado"></div></div>
+  </div>
+</div>
+
+<!-- ESTADO DE RESULTADOS -->
+<div id="page-resultados" class="page">
+  <div class="page-title">
+    <div class="icon">📈</div>
+    <div><h2>Estado de Resultados</h2><p>Ingresos, gastos y utilidad del período</p></div>
+  </div>
+  <div class="card">
+    <div class="card-header">📈 Estado de Resultados — Enero 2026</div>
+    <div class="card-body"><div id="tabla-resultados"></div></div>
+  </div>
+</div>
+
+<!-- BALANCE GENERAL -->
+<div id="page-balance_general" class="page">
+  <div class="page-title">
+    <div class="icon">🏛️</div>
+    <div><h2>Balance General</h2><p>Situación financiera al cierre del período</p></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <div class="card-header">🏦 ACTIVOS</div>
+      <div class="card-body"><div id="tabla-activos"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">📋 PASIVOS Y PATRIMONIO</div>
+      <div class="card-body"><div id="tabla-pasivos-pat"></div></div>
+    </div>
+  </div>
+  <div id="bg-check"></div>
+</div>
+
+<!-- SQL VIEWER -->
+<div id="page-sql_viewer" class="page">
+  <div class="page-title">
+    <div class="icon">💻</div>
+    <div><h2>Visor SQL</h2><p>El SQL real que genera cada libro contable — esto es lo que hace un ERP empresarial</p></div>
+  </div>
+  <div class="card">
+    <div class="card-header">🗂️ Estructura de Tablas (DDL)</div>
+    <div class="card-body">
+      <div class="sql-box"><span class="sql-comment">-- TABLA 1: Catálogo de Cuentas</span>
+<span class="sql-keyword">CREATE TABLE</span> CatalogoCuentas (
+  CodigoCuenta  <span class="sql-keyword">TEXT PRIMARY KEY</span>,
+  NombreCuenta  <span class="sql-keyword">TEXT NOT NULL</span>,
+  Naturaleza    <span class="sql-keyword">TEXT NOT NULL</span>,  <span class="sql-comment">-- 'D'=Deudora, 'A'=Acreedora</span>
+  Tipo          <span class="sql-keyword">TEXT NOT NULL</span>,  <span class="sql-comment">-- 'Clase','Grupo','Mayor'</span>
+  Nivel         <span class="sql-keyword">INTEGER NOT NULL</span> <span class="sql-comment">-- 1,2,3</span>
+);
+
+<span class="sql-comment">-- TABLA 2: Encabezado de cada asiento</span>
+<span class="sql-keyword">CREATE TABLE</span> Partidas (
+  IDPartida     <span class="sql-keyword">INTEGER PRIMARY KEY AUTOINCREMENT</span>,
+  NumeroPartida <span class="sql-keyword">INTEGER NOT NULL</span>,
+  Fecha         <span class="sql-keyword">TEXT NOT NULL</span>,
+  Concepto      <span class="sql-keyword">TEXT NOT NULL</span>,
+  EsAjuste      <span class="sql-keyword">INTEGER DEFAULT</span> 0
+);
+
+<span class="sql-comment">-- TABLA 3: Cada línea de Debe/Haber</span>
+<span class="sql-keyword">CREATE TABLE</span> DetallePartidas (
+  IDDetalle    <span class="sql-keyword">INTEGER PRIMARY KEY AUTOINCREMENT</span>,
+  IDPartida    <span class="sql-keyword">INTEGER REFERENCES</span> Partidas(IDPartida),
+  CodigoCuenta <span class="sql-keyword">TEXT REFERENCES</span> CatalogoCuentas(CodigoCuenta),
+  Descripcion  <span class="sql-keyword">TEXT</span>,
+  Debe         <span class="sql-keyword">REAL DEFAULT</span> 0,
+  Haber        <span class="sql-keyword">REAL DEFAULT</span> 0
+);</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">📖 Query — Libro Diario</div>
+    <div class="card-body">
+      <div class="sql-box"><span class="sql-keyword">SELECT</span>
+  p.NumeroPartida,
+  p.Fecha,
+  p.Concepto,
+  d.CodigoCuenta,
+  c.NombreCuenta,
+  d.Descripcion,
+  d.Debe,
+  d.Haber
+<span class="sql-keyword">FROM</span> Partidas p
+<span class="sql-keyword">JOIN</span> DetallePartidas d <span class="sql-keyword">ON</span> p.IDPartida = d.IDPartida
+<span class="sql-keyword">JOIN</span> CatalogoCuentas c <span class="sql-keyword">ON</span> d.CodigoCuenta = c.CodigoCuenta
+<span class="sql-keyword">ORDER BY</span> p.Fecha, p.NumeroPartida;</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">📚 Query — Libro Mayor (GROUP BY)</div>
+    <div class="card-body">
+      <div class="sql-box"><span class="sql-keyword">SELECT</span>
+  c.CodigoCuenta,
+  c.NombreCuenta,
+  c.Naturaleza,
+  <span class="sql-keyword">SUM</span>(d.Debe)  <span class="sql-keyword">AS</span> TotalDebe,
+  <span class="sql-keyword">SUM</span>(d.Haber) <span class="sql-keyword">AS</span> TotalHaber,
+  <span class="sql-keyword">CASE</span>
+    <span class="sql-keyword">WHEN</span> c.Naturaleza = <span class="sql-keyword">'D'</span>
+      <span class="sql-keyword">THEN SUM</span>(d.Debe) - <span class="sql-keyword">SUM</span>(d.Haber)
+    <span class="sql-keyword">ELSE SUM</span>(d.Haber) - <span class="sql-keyword">SUM</span>(d.Debe)
+  <span class="sql-keyword">END AS</span> Saldo
+<span class="sql-keyword">FROM</span> CatalogoCuentas c
+<span class="sql-keyword">JOIN</span> DetallePartidas d <span class="sql-keyword">ON</span> c.CodigoCuenta = d.CodigoCuenta
+<span class="sql-keyword">WHERE</span> c.Nivel = 3
+<span class="sql-keyword">GROUP BY</span> c.CodigoCuenta
+<span class="sql-keyword">HAVING SUM</span>(d.Debe) > 0 <span class="sql-keyword">OR SUM</span>(d.Haber) > 0
+<span class="sql-keyword">ORDER BY</span> c.CodigoCuenta;</div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ─── GLOBAL STATE ──────────────────────────────────────────────────────────
+let db = null;
+let SQL = null;
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+async function initDB() {
+  SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}` });
+  db = new SQL.Database();
+  crearTablas();
+  cargarDatosIniciales();
+  renderDashboard();
+  renderCatalogo();
+}
+
+function crearTablas() {
+  db.run(`CREATE TABLE IF NOT EXISTS CatalogoCuentas (
+    CodigoCuenta TEXT PRIMARY KEY,
+    NombreCuenta TEXT NOT NULL,
+    Naturaleza   TEXT NOT NULL,
+    Tipo         TEXT NOT NULL,
+    Nivel        INTEGER NOT NULL
+  );`);
+  db.run(`CREATE TABLE IF NOT EXISTS Partidas (
+    IDPartida     INTEGER PRIMARY KEY AUTOINCREMENT,
+    NumeroPartida INTEGER NOT NULL,
+    Fecha         TEXT NOT NULL,
+    Concepto      TEXT NOT NULL,
+    EsAjuste      INTEGER DEFAULT 0
+  );`);
+  db.run(`CREATE TABLE IF NOT EXISTS DetallePartidas (
+    IDDetalle    INTEGER PRIMARY KEY AUTOINCREMENT,
+    IDPartida    INTEGER REFERENCES Partidas(IDPartida),
+    CodigoCuenta TEXT REFERENCES CatalogoCuentas(CodigoCuenta),
+    Descripcion  TEXT,
+    Debe         REAL DEFAULT 0,
+    Haber        REAL DEFAULT 0
+  );`);
+}
+
+// ─── DATOS INICIALES ────────────────────────────────────────────────────────
+function cargarDatosIniciales() {
+  const cuentas = [
+    ["1","ACTIVO","D","Clase",1],
+    ["11","ACTIVO CORRIENTE","D","Grupo",2],
+    ["1101","Caja","D","Mayor",3],
+    ["1102","Bancos","D","Mayor",3],
+    ["1103","Cuentas por Cobrar Clientes","D","Mayor",3],
+    ["1104","IVA Crédito Fiscal","D","Mayor",3],
+    ["1106","Papelería y Útiles","D","Mayor",3],
+    ["12","ACTIVO NO CORRIENTE","D","Grupo",2],
+    ["1201","Equipo de Cocina","D","Mayor",3],
+    ["1201.1","Dep. Acum. Equipo de Cocina","A","Mayor",3],
+    ["1202","Mobiliario y Equipo de Banquetes","D","Mayor",3],
+    ["1202.1","Dep. Acum. Mobiliario y Equipo","A","Mayor",3],
+    ["1203","Equipo de Cómputo","D","Mayor",3],
+    ["1203.1","Dep. Acum. Equipo de Cómputo","A","Mayor",3],
+    ["2","PASIVO","A","Clase",1],
+    ["21","PASIVO CORRIENTE","A","Grupo",2],
+    ["2101","Cuentas por Pagar Proveedores","A","Mayor",3],
+    ["2102","IVA Débito Fiscal","A","Mayor",3],
+    ["2103","Sueldos por Pagar","A","Mayor",3],
+    ["2104","Cuotas IGSS por Pagar","A","Mayor",3],
+    ["2105","Bonificación por Pagar","A","Mayor",3],
+    ["2106","Aguinaldo por Pagar","A","Mayor",3],
+    ["2107","Indemnización por Pagar","A","Mayor",3],
+    ["2108","ISR / IVA por Pagar (SAT)","A","Mayor",3],
+    ["2109","Servicios Subcontratados por Pagar","A","Mayor",3],
+    ["22","PASIVO NO CORRIENTE","A","Grupo",2],
+    ["2201","Préstamos Bancarios L/P","A","Mayor",3],
+    ["3","PATRIMONIO","A","Clase",1],
+    ["31","CAPITAL","A","Grupo",2],
+    ["3101","Capital Social","A","Mayor",3],
+    ["3102","Utilidades Retenidas","A","Mayor",3],
+    ["3103","Utilidad / Pérdida del Ejercicio","A","Mayor",3],
+    ["4","INGRESOS","A","Clase",1],
+    ["41","INGRESOS OPERACIONALES","A","Grupo",2],
+    ["4101","Ingresos por Servicios de Banquetes","A","Mayor",3],
+    ["4102","Ingresos por Servicios de Decoración","A","Mayor",3],
+    ["4103","Ingresos por Alquiler de Equipo","A","Mayor",3],
+    ["5","GASTOS","D","Clase",1],
+    ["51","GASTOS DE OPERACIÓN","D","Grupo",2],
+    ["5101","Sueldos y Salarios","D","Mayor",3],
+    ["5102","Bonificación Incentivo","D","Mayor",3],
+    ["5103","Cuotas Patronales IGSS","D","Mayor",3],
+    ["5104","Aguinaldo","D","Mayor",3],
+    ["5105","Indemnización","D","Mayor",3],
+    ["5106","Servicios Subcontratados","D","Mayor",3],
+    ["5107","Depreciación Equipo de Cocina","D","Mayor",3],
+    ["5108","Depreciación Mobiliario y Equipo","D","Mayor",3],
+    ["5109","Depreciación Equipo de Cómputo","D","Mayor",3],
+    ["5110","Papelería y Útiles de Oficina","D","Mayor",3],
+    ["5111","Alquiler de Local","D","Mayor",3],
+    ["5112","Agua, Luz y Teléfono","D","Mayor",3],
+    ["52","GASTOS FINANCIEROS","D","Grupo",2],
+    ["5201","Intereses sobre Préstamos","D","Mayor",3],
+    ["53","GASTOS FISCALES","D","Grupo",2],
+    ["5301","ISR del Ejercicio","D","Mayor",3],
+  ];
+  const stmt = db.prepare(`INSERT OR IGNORE INTO CatalogoCuentas VALUES (?,?,?,?,?)`);
+  cuentas.forEach(c => stmt.run(c));
+  stmt.free();
+
+  // Partidas de ejemplo
+  const partidas = [
+    [1,"2026-01-01","Partida 1 — Apertura: Ecuación Patrimonial (Capital Social)",0,[
+      ["1102","Bancos — Depósito inicial",100000,0],
+      ["1201","Equipo de Cocina — Valor inicial",25000,0],
+      ["1202","Mobiliario y Equipo de Banquetes",15000,0],
+      ["1203","Equipo de Cómputo",8000,0],
+      ["3101","Capital Social — Banquetes Dannys S.A.",0,148000],
+    ]],
+    [2,"2026-01-05","Partida 2 — Compra de papelería y útiles de oficina",0,[
+      ["1106","Papelería y Útiles",2000,0],
+      ["1104","IVA Crédito Fiscal 12%",240,0],
+      ["1102","Bancos — Pago papelería",0,2240],
+    ]],
+    [3,"2026-01-10","Partida 3 — Venta de servicio de banquete al contado",0,[
+      ["1102","Bancos — Ingreso por banquete contado",56000,0],
+      ["4101","Ingresos por Servicios de Banquetes",0,50000],
+      ["2102","IVA Débito Fiscal 12%",0,6000],
+    ]],
+    [4,"2026-01-15","Partida 4 — Venta de servicio de banquete al crédito",0,[
+      ["1103","Cuentas por Cobrar — Banquete al crédito",33600,0],
+      ["4101","Ingresos por Servicios de Banquetes",0,30000],
+      ["2102","IVA Débito Fiscal 12%",0,3600],
+    ]],
+    [5,"2026-01-10","Partida 5 — Costo del servicio: subcontratados evento contado",0,[
+      ["5106","Servicios Subcontratados — Cocinero y Meseros",7500,0],
+      ["2109","Servicios Subcontratados por Pagar",0,7500],
+    ]],
+    [6,"2026-01-31","Partida 6 — Registro de sueldos y prestaciones laborales enero",0,[
+      ["5101","Sueldos y Salarios — Enero 2026",13000,0],
+      ["5102","Bonificación Incentivo (Decreto 78-89)",500,0],
+      ["5103","Cuotas Patronales IGSS 12.67%",1647.1,0],
+      ["5104","Aguinaldo devengado (8.33% mensual)",1082.9,0],
+      ["5105","Indemnización devengada (8.33% mensual)",1082.9,0],
+      ["2103","Sueldos por Pagar",0,13500],
+      ["2104","Cuotas IGSS por Pagar",0,2275.9],
+      ["2105","Bonificación por Pagar",0,500],
+      ["2106","Aguinaldo por Pagar",0,1082.9],
+      ["2107","Indemnización por Pagar",0,1082.9],
+      ["2109","Subcontratados por Pagar — Honorarios enero",0,7500],
+      ["2109","Subcontratados por Pagar — Cocinero/Meseros",0,7500],
+    ]],
+    [7,"2026-01-20","Partida 7 — Cobro de venta al crédito (Partida 4)",0,[
+      ["1102","Bancos — Cobro cuenta por cobrar",33600,0],
+      ["1103","Cuentas por Cobrar Clientes",0,33600],
+    ]],
+    [8,"2026-01-31","Partida 8 — Regularización IVA (Decreto 27-92 Art. 19)",0,[
+      ["2102","IVA Débito Fiscal — compensación SAT",9600,0],
+      ["1104","IVA Crédito Fiscal — compensación",0,240],
+      ["2108","IVA por Pagar — neto a SAT",0,9360],
+    ]],
+    [9,"2026-01-31","Ajuste 1 — Depreciaciones (Decreto 10-2012 Art. 26-28 línea recta)",1,[
+      ["5107","Dep. Equipo de Cocina 20% anual / 12 meses",416.67,0],
+      ["1201.1","Dep. Acum. Equipo de Cocina",0,416.67],
+      ["5108","Dep. Mobiliario y Equipo 20% anual / 12 meses",250,0],
+      ["1202.1","Dep. Acum. Mobiliario y Equipo",0,250],
+      ["5109","Dep. Equipo de Cómputo 33.33% anual / 12 meses",222.2,0],
+      ["1203.1","Dep. Acum. Equipo de Cómputo",0,222.2],
+    ]],
+  ];
+
+  partidas.forEach(([num, fecha, concepto, esAjuste, detalles]) => {
+    db.run(`INSERT INTO Partidas (NumeroPartida,Fecha,Concepto,EsAjuste) VALUES (?,?,?,?)`,
+      [num, fecha, concepto, esAjuste]);
+    const idPartida = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
+    const stmtD = db.prepare(`INSERT INTO DetallePartidas (IDPartida,CodigoCuenta,Descripcion,Debe,Haber) VALUES (?,?,?,?,?)`);
+    detalles.forEach(([cod, desc, debe, haber]) => stmtD.run([idPartida, cod, desc, debe, haber]));
+    stmtD.free();
+  });
+}
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+const Q = n => "Q " + (parseFloat(n)||0).toLocaleString("es-GT", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+function query(sql, params=[]) {
+  try {
+    const r = db.exec(sql, params);
+    if (!r.length) return [];
+    return r[0].values.map(row => {
+      const obj = {};
+      r[0].columns.forEach((c,i) => obj[c] = row[i]);
+      return obj;
+    });
+  } catch(e) { console.error(e); return []; }
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  document.getElementById("page-"+id).classList.add("active");
+  event.currentTarget.classList.add("active");
+  const renders = {
+    dashboard: renderDashboard,
+    catalogo: renderCatalogo,
+    diario: renderDiario,
+    mayor: renderMayor,
+    balance_saldos: renderBalanceSaldos,
+    ajustes: renderAjustes,
+    bal_ajustado: renderBalAjustado,
+    resultados: renderResultados,
+    balance_general: renderBalanceGeneral,
+  };
+  if (renders[id]) renders[id]();
+}
+
+// ─── DASHBOARD ──────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const totalPartidas = query("SELECT COUNT(*) as n FROM Partidas")[0]?.n || 0;
+  const totalCuentas  = query("SELECT COUNT(*) as n FROM CatalogoCuentas WHERE Nivel=3")[0]?.n || 0;
+  const totalDebe     = query("SELECT SUM(Debe) as s FROM DetallePartidas")[0]?.s || 0;
+  const totalHaber    = query("SELECT SUM(Haber) as s FROM DetallePartidas")[0]?.s || 0;
+
+  const ingresos = query(`SELECT SUM(d.Haber) as s FROM DetallePartidas d
+    JOIN CatalogoCuentas c ON d.CodigoCuenta=c.CodigoCuenta WHERE c.CodigoCuenta LIKE '4%' AND c.Nivel=3`)[0]?.s || 0;
+  const gastos = query(`SELECT SUM(d.Debe) as s FROM DetallePartidas d
+    JOIN CatalogoCuentas c ON d.CodigoCuenta=c.CodigoCuenta WHERE c.CodigoCuenta LIKE '5%' AND c.Nivel=3`)[0]?.s || 0;
+
+  document.getElementById("stats-row").innerHTML = `
+    <div class="stat-card"><div class="stat-label">Partidas Registradas</div><div class="stat-value">${totalPartidas}</div><div class="stat-sub">asientos contables</div></div>
+    <div class="stat-card green"><div class="stat-label">Ingresos Totales</div><div class="stat-value" style="font-size:1.1rem">${Q(ingresos)}</div><div class="stat-sub">período enero 2026</div></div>
+    <div class="stat-card orange"><div class="stat-label">Gastos Totales</div><div class="stat-value" style="font-size:1.1rem">${Q(gastos)}</div><div class="stat-sub">período enero 2026</div></div>
+    <div class="stat-card ${Math.abs(totalDebe-totalHaber)<0.01?'green':'red'}">
+      <div class="stat-label">Estado del Libro</div>
+      <div class="stat-value" style="font-size:1rem">${Math.abs(totalDebe-totalHaber)<0.01?"✔ Cuadrado":"✘ Descuadrado"}</div>
+      <div class="stat-sub">${totalCuentas} cuentas activas</div>
+    </div>`;
+
+  const ultimas = query("SELECT NumeroPartida, Fecha, Concepto, EsAjuste FROM Partidas ORDER BY IDPartida DESC LIMIT 5");
+  document.getElementById("dash-partidas").innerHTML = `<table><thead><tr><th>#</th><th>Fecha</th><th>Concepto</th><th>Tipo</th></tr></thead><tbody>
+    ${ultimas.map(p=>`<tr><td class="code">${p.NumeroPartida}</td><td>${p.Fecha}</td><td>${p.Concepto}</td>
+    <td><span class="badge ${p.EsAjuste?'badge-ajuste':'badge-normal'}">${p.EsAjuste?"Ajuste":"Normal"}</span></td></tr>`).join("")}
+  </tbody></table>`;
+
+  const cuadrado = Math.abs(totalDebe-totalHaber)<0.01;
+  document.getElementById("dash-verify").innerHTML = `
+    <div class="verify-bar ${cuadrado?'verify-ok':'verify-err'}">
+      ${cuadrado?"✔":"✘"} Libro Diario: Debe ${Q(totalDebe)} = Haber ${Q(totalHaber)}
+    </div>
+    <div style="margin-top:12px;font-size:0.83rem;color:#6b7a99;line-height:1.7">
+      <strong>¿Qué significa esto?</strong><br>
+      En contabilidad de doble entrada, la suma de todos los débitos debe ser igual a la suma de todos los créditos.
+      Si el sistema muestra ✔ Cuadrado, significa que todos los asientos están correctamente registrados.
+    </div>`;
+}
+
+// ─── CATÁLOGO ───────────────────────────────────────────────────────────────
+function renderCatalogo() {
+  const cuentas = query("SELECT * FROM CatalogoCuentas ORDER BY CodigoCuenta");
+  let html = `<table><thead><tr><th>Código</th><th>Nombre</th><th>Naturaleza</th><th>Tipo</th><th>Nivel</th><th>Acción</th></tr></thead><tbody>`;
+  cuentas.forEach(c => {
+    const cls = c.Nivel==1?"nivel-1":c.Nivel==2?"nivel-2":"";
+    html += `<tr class="${cls}">
+      <td class="code">${c.CodigoCuenta}</td>
+      <td>${"&nbsp;".repeat((c.Nivel-1)*4)}${c.NombreCuenta}</td>
+      <td><span class="badge badge-${c.Naturaleza.toLowerCase()}">${c.Naturaleza==="D"?"Deudora":"Acreedora"}</span></td>
+      <td>${c.Tipo}</td><td style="text-align:center">${c.Nivel}</td>
+      <td>${c.Nivel===3?`<button class="btn btn-danger" onclick="eliminarCuenta('${c.CodigoCuenta}')">🗑️</button>`:"—"}</td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+  document.getElementById("tabla-catalogo").innerHTML = html;
+}
+
+function agregarCuenta() {
+  const cod  = document.getElementById("cat-codigo").value.trim();
+  const nom  = document.getElementById("cat-nombre").value.trim();
+  const nat  = document.getElementById("cat-naturaleza").value;
+  const tipo = document.getElementById("cat-tipo").value;
+  const nivel= parseInt(document.getElementById("cat-nivel").value);
+  if (!cod || !nom) { showMsg("cat-msg","⚠️ Completa código y nombre","alert-warning"); return; }
+  try {
+    db.run("INSERT INTO CatalogoCuentas VALUES (?,?,?,?,?)",[cod,nom,nat,tipo,nivel]);
+    showMsg("cat-msg","✅ Cuenta agregada exitosamente","alert-success");
+    renderCatalogo();
+    ["cat-codigo","cat-nombre"].forEach(id=>document.getElementById(id).value="");
+  } catch(e) { showMsg("cat-msg","❌ Error: el código ya existe","alert-warning"); }
+}
+
+function eliminarCuenta(cod) {
+  const uso = query("SELECT COUNT(*) as n FROM DetallePartidas WHERE CodigoCuenta=?",[cod])[0]?.n||0;
+  if (uso>0) { alert("No se puede eliminar: la cuenta tiene movimientos registrados."); return; }
+  if (!confirm(`¿Eliminar cuenta ${cod}?`)) return;
+  db.run("DELETE FROM CatalogoCuentas WHERE CodigoCuenta=?",[cod]);
+  renderCatalogo();
+}
+
+// ─── PARTIDAS ───────────────────────────────────────────────────────────────
+let filaIndex = 0;
+function agregarFilaDetalle() {
+  const cuentas = query("SELECT CodigoCuenta, NombreCuenta FROM CatalogoCuentas WHERE Nivel=3 ORDER BY CodigoCuenta");
+  const opts = cuentas.map(c=>`<option value="${c.CodigoCuenta}">${c.CodigoCuenta} — ${c.NombreCuenta}</option>`).join("");
+  const id = filaIndex++;
+  const div = document.createElement("div");
+  div.className = "detalle-row"; div.id = `fila-${id}`;
+  div.innerHTML = `
+    <select id="f-cod-${id}">${opts}</select>
+    <input type="text" id="f-desc-${id}" placeholder="Descripción línea" />
+    <input type="number" id="f-debe-${id}" placeholder="0.00" step="0.01" min="0" oninput="verificarBalance()" />
+    <input type="number" id="f-haber-${id}" placeholder="0.00" step="0.01" min="0" oninput="verificarBalance()" />
+    <button class="btn btn-danger" onclick="this.parentElement.remove();verificarBalance()">✕</button>`;
+  document.getElementById("detalle-rows").appendChild(div);
+  verificarBalance();
+}
+
+function verificarBalance() {
+  const rows = document.querySelectorAll(".detalle-row");
+  let debe=0, haber=0;
+  rows.forEach(r => {
+    const id = r.id.replace("fila-","");
+    debe  += parseFloat(document.getElementById(`f-debe-${id}`)?.value||0);
+    haber += parseFloat(document.getElementById(`f-haber-${id}`)?.value||0);
+  });
+  const ok = Math.abs(debe-haber)<0.01;
+  document.getElementById("verify-bar").innerHTML = `
+    <div class="verify-bar ${ok?'verify-ok':'verify-err'}">
+      ${ok?"✔ CUADRADO":"✘ Diferencia: "+Q(Math.abs(debe-haber))} &nbsp;|&nbsp; Debe: ${Q(debe)} &nbsp;|&nbsp; Haber: ${Q(haber)}
+    </div>`;
+}
+
+function guardarPartida() {
+  const num     = parseInt(document.getElementById("p-numero").value);
+  const fecha   = document.getElementById("p-fecha").value;
+  const concepto= document.getElementById("p-concepto").value.trim();
+  const esAjuste= parseInt(document.getElementById("p-esajuste").value);
+  if (!num||!fecha||!concepto) { showMsg("p-msg","⚠️ Completa el encabezado","alert-warning"); return; }
+
+  const rows = document.querySelectorAll(".detalle-row");
+  if (rows.length < 2) { showMsg("p-msg","⚠️ Necesitas al menos 2 líneas","alert-warning"); return; }
+
+  let debe=0, haber=0, detalles=[];
+  rows.forEach(r => {
+    const id = r.id.replace("fila-","");
+    const cod  = document.getElementById(`f-cod-${id}`)?.value;
+    const desc = document.getElementById(`f-desc-${id}`)?.value||"";
+    const d    = parseFloat(document.getElementById(`f-debe-${id}`)?.value||0);
+    const h    = parseFloat(document.getElementById(`f-haber-${id}`)?.value||0);
+    debe+=d; haber+=h;
+    if(cod) detalles.push([cod,desc,d,h]);
+  });
+
+  if (Math.abs(debe-haber)>0.01) { showMsg("p-msg","❌ La partida no cuadra — Debe ≠ Haber","alert-warning"); return; }
+
+  db.run("INSERT INTO Partidas (NumeroPartida,Fecha,Concepto,EsAjuste) VALUES (?,?,?,?)",[num,fecha,concepto,esAjuste]);
+  const pid = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
+  const stmt = db.prepare("INSERT INTO DetallePartidas (IDPartida,CodigoCuenta,Descripcion,Debe,Haber) VALUES (?,?,?,?,?)");
+  detalles.forEach(d => stmt.run([pid,...d]));
+  stmt.free();
+  showMsg("p-msg","✅ Partida guardada correctamente","alert-success");
+  limpiarFormPartida();
+}
+
+function limpiarFormPartida() {
+  ["p-numero","p-concepto"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("detalle-rows").innerHTML="";
+  document.getElementById("verify-bar").innerHTML="";
+  filaIndex=0;
+  agregarFilaDetalle(); agregarFilaDetalle();
+}
+
+// ─── LIBRO DIARIO ───────────────────────────────────────────────────────────
+function renderDiario() {
+  const rows = query(`
+    SELECT p.NumeroPartida, p.Fecha, p.Concepto, p.EsAjuste,
+           d.CodigoCuenta, c.NombreCuenta, d.Descripcion, d.Debe, d.Haber
+    FROM Partidas p
+    JOIN DetallePartidas d ON p.IDPartida=d.IDPartida
+    JOIN CatalogoCuentas c ON d.CodigoCuenta=c.CodigoCuenta
+    ORDER BY p.Fecha, p.NumeroPartida, d.IDDetalle`);
+
+  let html=`<table><thead><tr><th>#</th><th>Fecha</th><th>Código</th><th>Cuenta</th><th>Descripción</th><th>Debe</th><th>Haber</th></tr></thead><tbody>`;
+  let curP=-1, totD=0, totH=0;
+  rows.forEach(r => {
+    if (r.NumeroPartida!==curP) {
+      if (curP!==-1) html+=`<tr style="background:#f0f4f8"><td colspan="5" style="font-style:italic;font-size:0.78rem;color:#888">— ${r.EsAjuste?"Ajuste":"Partida"} ${curP} —</td><td class="num" style="font-weight:700">...</td><td class="num" style="font-weight:700">...</td></tr>`;
+      curP=r.NumeroPartida;
+    }
+    html+=`<tr>
+      <td class="code">${r.NumeroPartida}</td>
+      <td>${r.Fecha}</td>
+      <td class="code">${r.CodigoCuenta}</td>
+      <td>${r.NombreCuenta}</td>
+      <td style="color:#555;font-size:0.82rem">${r.Descripcion||""}</td>
+      <td class="num">${r.Debe>0?Q(r.Debe):""}</td>
+      <td class="num">${r.Haber>0?Q(r.Haber):""}</td>
+    </tr>`;
+    totD+=r.Debe; totH+=r.Haber;
+  });
+  html+=`<tr style="background:var(--navy);color:white;font-weight:800">
+    <td colspan="5" style="color:white;text-align:right;font-size:0.9rem">TOTALES</td>
+    <td class="num" style="color:white">${Q(totD)}</td>
+    <td class="num" style="color:white">${Q(totH)}</td>
+  </tr></tbody></table>`;
+  document.getElementById("tabla-diario").innerHTML = html;
+}
+
+// ─── LIBRO MAYOR ────────────────────────────────────────────────────────────
+function renderMayor() {
+  const cuentas = query(`
+    SELECT c.CodigoCuenta, c.NombreCuenta, c.Naturaleza,
+           SUM(d.Debe) as TotalDebe, SUM(d.Haber) as TotalHaber,
+           CASE WHEN c.Naturaleza='D' THEN SUM(d.Debe)-SUM(d.Haber)
+                ELSE SUM(d.Haber)-SUM(d.Debe) END as Saldo
+    FROM CatalogoCuentas c
+    JOIN DetallePartidas d ON c.CodigoCuenta=d.CodigoCuenta
+    WHERE c.Nivel=3
+    GROUP BY c.CodigoCuenta
+    HAVING SUM(d.Debe)>0 OR SUM(d.Haber)>0
+    ORDER BY c.CodigoCuenta`);
+
+  let html="";
+  cuentas.forEach(c => {
+    const movD = query("SELECT p.Fecha, p.NumeroPartida, d.Descripcion, d.Debe FROM DetallePartidas d JOIN Partidas p ON d.IDPartida=p.IDPartida WHERE d.CodigoCuenta=? AND d.Debe>0 ORDER BY p.Fecha",[c.CodigoCuenta]);
+    const movH = query("SELECT p.Fecha, p.NumeroPartida, d.Descripcion, d.Haber FROM DetallePartidas d JOIN Partidas p ON d.IDPartida=p.IDPartida WHERE d.CodigoCuenta=? AND d.Haber>0 ORDER BY p.Fecha",[c.CodigoCuenta]);
+    html+=`<div class="mayor-account">
+      <div class="mayor-account-header">
+        <div><strong style="font-size:0.95rem">${c.CodigoCuenta} — ${c.NombreCuenta}</strong></div>
+        <span>Naturaleza: ${c.Naturaleza==="D"?"Deudora":"Acreedora"}</span>
+      </div>
+      <div class="mayor-t-grid">
+        <div class="mayor-side"><h5>DEBE</h5>
+          ${movD.map(m=>`<div class="mayor-line"><span>${m.Fecha} P${m.NumeroPartida}</span><span style="font-family:monospace">${Q(m.Debe)}</span></div>`).join("")||"<div style='color:#aaa;font-size:0.8rem'>Sin movimientos</div>"}
+          <div class="mayor-line" style="border-top:1px solid var(--border);margin-top:4px;font-weight:700"><span>TOTAL DEBE</span><span style="font-family:monospace">${Q(c.TotalDebe)}</span></div>
+        </div>
+        <div class="mayor-side right"><h5>HABER</h5>
+          ${movH.map(m=>`<div class="mayor-line"><span>${m.Fecha} P${m.NumeroPartida}</span><span style="font-family:monospace">${Q(m.Haber)}</span></div>`).join("")||"<div style='color:#aaa;font-size:0.8rem'>Sin movimientos</div>"}
+          <div class="mayor-line" style="border-top:1px solid var(--border);margin-top:4px;font-weight:700"><span>TOTAL HABER</span><span style="font-family:monospace">${Q(c.TotalHaber)}</span></div>
+        </div>
+      </div>
+      <div class="mayor-saldo">
+        <span>SALDO ${c.Naturaleza==="D"?"DEUDOR":"ACREEDOR"}</span>
+        <span style="font-family:monospace;font-size:1rem">${Q(c.Saldo)}</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById("mayor-container").innerHTML = html || "<div class='alert alert-warning'>No hay movimientos registrados.</div>";
+}
+
+// ─── BALANCE DE SALDOS ──────────────────────────────────────────────────────
+function getSaldos() {
+  return query(`
+    SELECT c.CodigoCuenta, c.NombreCuenta, c.Naturaleza,
+           SUM(d.Debe) as TDebe, SUM(d.Haber) as THaber,
+           CASE WHEN c.Naturaleza='D' THEN SUM(d.Debe)-SUM(d.Haber)
+                ELSE SUM(d.Haber)-SUM(d.Debe) END as Saldo
+    FROM CatalogoCuentas c
+    JOIN DetallePartidas d ON c.CodigoCuenta=d.CodigoCuenta
+    WHERE c.Nivel=3
+    GROUP BY c.CodigoCuenta
+    HAVING SUM(d.Debe)>0 OR SUM(d.Haber)>0
+    ORDER BY c.CodigoCuenta`);
+}
+
+function renderBalanceSaldos() {
+  const saldos = getSaldos();
+  let totD=0,totA=0;
+  let html=`<table><thead><tr><th>Código</th><th>Cuenta</th><th>Saldo Deudor</th><th>Saldo Acreedor</th></tr></thead><tbody>`;
+  saldos.forEach(s => {
+    const sd = s.Naturaleza==="D"?s.Saldo:0;
+    const sa = s.Naturaleza==="A"?s.Saldo:0;
+    totD+=sd; totA+=sa;
+    html+=`<tr><td class="code">${s.CodigoCuenta}</td><td>${s.NombreCuenta}</td>
+      <td class="num">${sd>0?Q(sd):""}</td><td class="num">${sa>0?Q(sa):""}</td></tr>`;
+  });
+  html+=`<tr style="background:var(--navy);color:white;font-weight:800">
+    <td colspan="2" style="color:white;text-align:right">TOTALES</td>
+    <td class="num" style="color:white">${Q(totD)}</td>
+    <td class="num" style="color:white">${Q(totA)}</td>
+  </tr></tbody></table>`;
+  const ok=Math.abs(totD-totA)<0.01;
+  html+=`<div class="fin-check ${ok?'ok':'err'}" style="margin-top:12px">${ok?"✔ CUADRADO — Deudor = Acreedor":"✘ DESCUADRADO — Revisar partidas"}</div>`;
+  document.getElementById("tabla-balance-saldos").innerHTML=html;
+}
+
+// ─── AJUSTES ────────────────────────────────────────────────────────────────
+function renderAjustes() {
+  const rows = query(`
+    SELECT p.NumeroPartida, p.Fecha, p.Concepto, d.CodigoCuenta,
+           c.NombreCuenta, d.Descripcion, d.Debe, d.Haber
+    FROM Partidas p JOIN DetallePartidas d ON p.IDPartida=d.IDPartida
+    JOIN CatalogoCuentas c ON d.CodigoCuenta=c.CodigoCuenta
+    WHERE p.EsAjuste=1 ORDER BY p.Fecha, p.NumeroPartida`);
+  if (!rows.length) { document.getElementById("tabla-ajustes").innerHTML=`<div class="alert alert-info">No hay ajustes registrados aún.</div>`; return; }
+  let html=`<table><thead><tr><th>#</th><th>Fecha</th><th>Código</th><th>Cuenta</th><th>Descripción</th><th>Debe</th><th>Haber</th></tr></thead><tbody>`;
+  rows.forEach(r => html+=`<tr><td class="code">${r.NumeroPartida}</td><td>${r.Fecha}</td><td class="code">${r.CodigoCuenta}</td>
+    <td>${r.NombreCuenta}</td><td style="font-size:0.82rem">${r.Descripcion||""}</td>
+    <td class="num">${r.Debe>0?Q(r.Debe):""}</td><td class="num">${r.Haber>0?Q(r.Haber):""}</td></tr>`);
+  html+="</tbody></table>";
+  document.getElementById("tabla-ajustes").innerHTML=html;
+}
+
+// ─── BALANCE AJUSTADO ────────────────────────────────────────────────────────
+function renderBalAjustado() {
+  const saldos = getSaldos();
+  let totD=0,totA=0;
+  let html=`<table><thead><tr><th>Código</th><th>Cuenta</th><th>Saldo Deudor Aj.</th><th>Saldo Acreedor Aj.</th></tr></thead><tbody>`;
+  saldos.forEach(s => {
+    const sd = s.Naturaleza==="D"?s.Saldo:0;
+    const sa = s.Naturaleza==="A"?s.Saldo:0;
+    totD+=sd; totA+=sa;
+    html+=`<tr><td class="code">${s.CodigoCuenta}</td><td>${s.NombreCuenta}</td>
+      <td class="num">${sd>0?Q(sd):""}</td><td class="num">${sa>0?Q(sa):""}</td></tr>`;
+  });
+  html+=`<tr style="background:var(--navy);color:white;font-weight:800"><td colspan="2" style="color:white;text-align:right">TOTALES</td>
+    <td class="num" style="color:white">${Q(totD)}</td><td class="num" style="color:white">${Q(totA)}</td></tr></tbody></table>`;
+  const ok=Math.abs(totD-totA)<0.01;
+  html+=`<div class="fin-check ${ok?'ok':'err'}" style="margin-top:12px">${ok?"✔ CUADRADO":"✘ DESCUADRADO"}</div>`;
+  document.getElementById("tabla-bal-ajustado").innerHTML=html;
+}
+
+// ─── ESTADO DE RESULTADOS ────────────────────────────────────────────────────
+function renderResultados() {
+  const saldos = getSaldos();
+  const byCod = {};
+  saldos.forEach(s => byCod[s.CodigoCuenta]=s.Saldo);
+
+  const ingresos4 = saldos.filter(s=>s.CodigoCuenta.startsWith("4")&&s.CodigoCuenta.length>=4);
+  const gastos5   = saldos.filter(s=>s.CodigoCuenta.startsWith("5")&&s.CodigoCuenta.length>=4);
+  const totIng = ingresos4.reduce((a,s)=>a+s.Saldo,0);
+  const totGas = gastos5.reduce((a,s)=>a+s.Saldo,0);
+  const utiAntes = totIng-totGas;
+  const isr = utiAntes>0?Math.round(utiAntes*0.25*100)/100:0;
+  const utiNeta = utiAntes-isr;
+
+  let html=`<table><tbody>
+    <tr class="fin-group-header"><td colspan="2">INGRESOS</td></tr>`;
+  ingresos4.forEach(s=>html+=`<tr><td style="padding-left:24px">${s.CodigoCuenta} — ${s.NombreCuenta}</td><td class="num">${Q(s.Saldo)}</td></tr>`);
+  html+=`<tr class="fin-total"><td style="font-weight:800">TOTAL INGRESOS</td><td class="num">${Q(totIng)}</td></tr>
+    <tr class="fin-group-header"><td colspan="2">GASTOS DE OPERACIÓN</td></tr>`;
+  gastos5.forEach(s=>html+=`<tr><td style="padding-left:24px">${s.CodigoCuenta} — ${s.NombreCuenta}</td><td class="num">(${Q(s.Saldo)})</td></tr>`);
+  html+=`<tr class="fin-total"><td style="font-weight:800">TOTAL GASTOS</td><td class="num">(${Q(totGas)})</td></tr>
+    <tr class="fin-grandtotal"><td>UTILIDAD ANTES DE ISR</td><td class="num">${Q(utiAntes)}</td></tr>
+    <tr><td style="padding-left:24px">ISR 25% — Régimen sobre Utilidades (Decreto 10-2012)</td><td class="num">(${Q(isr)})</td></tr>
+    <tr class="fin-grandtotal"><td>UTILIDAD NETA DEL EJERCICIO</td><td class="num">${Q(utiNeta)}</td></tr>
+  </tbody></table>`;
+  document.getElementById("tabla-resultados").innerHTML=html;
+}
+
+// ─── BALANCE GENERAL ────────────────────────────────────────────────────────
+function renderBalanceGeneral() {
+  const saldos = getSaldos();
+  const byCod={};
+  saldos.forEach(s=>byCod[s.CodigoCuenta]=s.Saldo);
+
+  const ingresos4 = saldos.filter(s=>s.CodigoCuenta.startsWith("4")&&s.CodigoCuenta.length>=4);
+  const gastos5   = saldos.filter(s=>s.CodigoCuenta.startsWith("5")&&s.CodigoCuenta.length>=4);
+  const totIng = ingresos4.reduce((a,s)=>a+s.Saldo,0);
+  const totGas = gastos5.reduce((a,s)=>a+s.Saldo,0);
+  const utiNeta = (totIng-totGas)*0.75;
+
+  function seccion(cods, etiqueta, negativo=false) {
+    let tot=0, rows="";
+    cods.forEach(([cod,nom])=>{
+      const v=(byCod[cod]||0)*(negativo?-1:1);
+      if(Math.abs(v)>0.001){ rows+=`<tr><td style="padding-left:20px;font-size:0.85rem">${cod} — ${nom}</td><td class="num">${Q(v)}</td></tr>`; tot+=v; }
+    });
+    return {rows,tot};
+  }
+
+  // ACTIVOS
+  const ac = seccion([["1101","Caja"],["1102","Bancos"],["1103","Ctas. por Cobrar"],["1104","IVA Crédito Fiscal"],["1106","Papelería y Útiles"]],"");
+  const anc_base = seccion([["1201","Equipo de Cocina"],["1202","Mobiliario y Equipo"],["1203","Equipo de Cómputo"]],"");
+  const anc_dep  = seccion([["1201.1","Dep. Acum. Eq. Cocina"],["1202.1","Dep. Acum. Mobiliario"],["1203.1","Dep. Acum. Eq. Cómputo"]],"",true);
+  const totANC = anc_base.tot + anc_dep.tot;
+  const totActivos = ac.tot + totANC;
+
+  let htmlA=`<table><tbody>
+    <tr class="fin-group-header"><td colspan="2">ACTIVO CORRIENTE</td></tr>
+    ${ac.rows}
+    <tr class="fin-total"><td>Total Activo Corriente</td><td class="num">${Q(ac.tot)}</td></tr>
+    <tr class="fin-group-header"><td colspan="2">ACTIVO NO CORRIENTE</td></tr>
+    ${anc_base.rows}${anc_dep.rows}
+    <tr class="fin-total"><td>Total Activo No Corriente</td><td class="num">${Q(totANC)}</td></tr>
+    <tr class="fin-grandtotal"><td>TOTAL ACTIVOS</td><td class="num">${Q(totActivos)}</td></tr>
+  </tbody></table>`;
+
+  // PASIVOS
+  const pc = seccion([["2101","Ctas. por Pagar"],["2102","IVA Débito Fiscal"],["2103","Sueldos por Pagar"],["2104","IGSS por Pagar"],["2105","Bonificación por Pagar"],["2106","Aguinaldo por Pagar"],["2107","Indemnización por Pagar"],["2108","ISR/IVA por Pagar"],["2109","Subcontratados por Pagar"]],"");
+  const cap = byCod["3101"]||0;
+  const totPat = cap + utiNeta;
+  const totPasivosYPat = pc.tot + totPat;
+
+  let htmlP=`<table><tbody>
+    <tr class="fin-group-header"><td colspan="2">PASIVO CORRIENTE</td></tr>
+    ${pc.rows}
+    <tr class="fin-total"><td>Total Pasivo Corriente</td><td class="num">${Q(pc.tot)}</td></tr>
+    <tr class="fin-group-header"><td colspan="2">PATRIMONIO</td></tr>
+    <tr><td style="padding-left:20px;font-size:0.85rem">3101 — Capital Social</td><td class="num">${Q(cap)}</td></tr>
+    <tr><td style="padding-left:20px;font-size:0.85rem">3103 — Utilidad Neta del Ejercicio</td><td class="num">${Q(utiNeta)}</td></tr>
+    <tr class="fin-total"><td>Total Patrimonio</td><td class="num">${Q(totPat)}</td></tr>
+    <tr class="fin-grandtotal"><td>TOTAL PASIVOS + PATRIMONIO</td><td class="num">${Q(totPasivosYPat)}</td></tr>
+  </tbody></table>`;
+
+  document.getElementById("tabla-activos").innerHTML=htmlA;
+  document.getElementById("tabla-pasivos-pat").innerHTML=htmlP;
+  const ok=Math.abs(totActivos-totPasivosYPat)<1;
+  document.getElementById("bg-check").innerHTML=`<div class="fin-check ${ok?'ok':'err'}">${ok?"✔ BALANCE CUADRADO — Activos = Pasivos + Patrimonio":"✘ DESCUADRADO — Activos "+Q(totActivos)+" ≠ Pasivos+Pat "+Q(totPasivosYPat)}</div>`;
+}
+
+// ─── HELPERS UI ─────────────────────────────────────────────────────────────
+function showMsg(id, msg, cls) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="alert ${cls}" style="margin-top:10px">${msg}</div>`;
+  setTimeout(()=>el.innerHTML="", 3500);
+}
+
+// ─── BOOT ───────────────────────────────────────────────────────────────────
+window.addEventListener("load", () => {
+  initDB().then(() => {
+    limpiarFormPartida();
+  });
+});
+</script>
+</body>
+</html>
